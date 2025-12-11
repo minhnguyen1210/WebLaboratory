@@ -1,4 +1,4 @@
-# 🇻🇳 Vietnam Place - Enhanced with HuggingFace AI
+# 🇻🇳 Vietnam Place 
 
 Một ứng dụng web hiện đại để khám phá các địa điểm du lịch Việt Nam với tính năng AI mạnh mẽ từ HuggingFace.
 
@@ -18,12 +18,8 @@ Một ứng dụng web hiện đại để khám phá các địa điểm du l�
 - Dịch giữa nhiều ngôn ngữ
 - Hai phiên bản: Local (Google Translate) + HuggingFace
 
-### 4. 🤖 HuggingFace AI Features (NEW!)
-- **Text Generation**: Tạo văn bản từ prompt
-- **Summarization**: Tóm tắt các đoạn văn dài
-- **Question Answering**: Trả lời câu hỏi dựa trên context
-- **Translation**: Dịch văn bản với model Helsinki-NLP
-
+### 4. 🤖 HuggingFace AI Features
+- Chatbot
 ### 5. ☀️ Thông tin thời tiết
 - Hiển thị nhiệt độ, độ ẩm, tốc độ gió
 - Icon thời tiết tương ứng
@@ -110,25 +106,6 @@ python main.py
 - Website: http://localhost:5000
 - FastAPI Docs: http://localhost:8000/docs
 
-## 🌐 Deployment với ngrok/pinggy
-
-### Với ngrok:
-
-```powershell
-# Terminal 3: Expose FastAPI
-ngrok http 8000
-
-# Cập nhật URL trong main.py
-# HF_API_BASE = 'https://your-ngrok-url.ngrok.io'
-```
-
-### Với pinggy (không cần đăng ký):
-
-```powershell
-ssh -R 80:localhost:8000 -N -T ssh.pinggy.io
-```
-
-Xem chi tiết trong file `DEPLOYMENT.md`
 
 ## 📝 Sử dụng HuggingFace API
 
@@ -182,36 +159,6 @@ response = requests.post(
 3. Create new token (read access)
 4. Copy token vào `.env`
 
-### Models sử dụng
-
-| Tên | Model | Endpoint |
-|-----|-------|----------|
-| Text Generation | Mistral-7B | `/api/generate` |
-| Summarization | BART-large-CNN | `/api/summarize` |
-| QA | RoBERTa-base-SQuAD2 | `/api/qa` |
-| Translation | Helsinki-NLP | `/api/hf-translate` |
-
-## 🐛 Troubleshooting
-
-### HuggingFace API không kết nối
-- Kiểm tra HF_API_TOKEN trong `.env`
-- Restart FastAPI backend
-- Kiểm tra ngrok URL (nếu deploy)
-
-### CORS Error
-- Đã cấu hình CORSMiddleware trong FastAPI
-- Kiểm tra browser console cho chi tiết
-
-### Model loading timeout
-- Lần đầu tiên load model sẽ chậm (30 giây)
-- Lần sau sẽ nhanh hơn
-
-## 📚 Tài liệu
-
-- [Hướng dẫn Deployment](DEPLOYMENT.md)
-- [FastAPI Docs](http://localhost:8000/docs)
-- [HuggingFace API](https://huggingface.co/docs/inference-api)
-- [Flask Docs](https://flask.palletsprojects.com/)
 
 ## 🎨 Tính năng giao diện
 
@@ -236,28 +183,6 @@ response = requests.post(
 ├── style.css                # Styling
 ├── requirements.txt         # Python dependencies
 ├── .env.example             # Cấu hình mẫu
-├── run_servers.ps1          # Script chạy servers
 ├── DEPLOYMENT.md            # Hướng dẫn deploy
 └── README.md                # File này
 ```
-
-## 🤝 Đóng góp
-
-Để đóng góp, vui lòng:
-1. Fork project
-2. Tạo branch feature (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📄 License
-
-Dự án này được cấp phép dưới MIT License.
-
-## 👨‍💻 Tác giả
-
-Tạo bởi sinh viên VNU-HCMUS
-
----
-
-**Ghi chú**: Đây là dự án giáo dục. Một số API key được công khai cho mục đích demo. Trong production, vui lòng sử dụng environment variables.
