@@ -299,10 +299,37 @@ def api_qa():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 503
 
+# Start FastAPI in background thread when Flask starts
+import threading
+import subprocess
+import time
+
+def start_fastapi_background():
+    """Start FastAPI backend in background"""
+    print("🚀 Starting FastAPI backend...")
+    subprocess.Popen([
+        "python", "-m", "uvicorn",
+        "huggingface_api:app",
+        "--host", "0.0.0.0",
+        "--port", "8000",
+        "--workers", "1"
+    ])
+
+# Start FastAPI when module loads (for gunicorn)
+if os.environ.get('PORT'):  # Running on Render
+    fastapi_thread = threading.Thread(target=start_fastapi_background, daemon=True)
+    fastapi_thread.start()
+    time.sleep(3)  # Wait for FastAPI to start
+
 if __name__ == "__main__":
     # Get port from environment (for Render.com)
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
+    
+    # Start FastAPI in local development
+    if not os.environ.get('PORT'):
+        start_fastapi_background()
+        time.sleep(3)
     
     app.run(
         host='0.0.0.0',
