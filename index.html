@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vietnam Place - Khám phá Việt Nam</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:,">
+<script src="/huggingface_client.js" defer></script>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🇻🇳 Khám phá địa điểm Việt Nam</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="auth-login-btn show" onclick="showAuthModal()">
+                 Đăng nhập
+            </button>
+            <div class="user-menu" id="userMenu">
+                <div class="user-avatar" onclick="toggleUserDropdown()">
+                    <span id="userInitial">U</span>
+                </div>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-item" style="font-weight: 600; cursor: default;">
+                        <span></span>
+                        <span id="userEmail">user@example.com</span>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: 5px 0;">
+                    <div class="user-dropdown-item" onclick="logout()">
+                        <span></span>
+                        <span>Đăng xuất</span>
+                    </div>
+                </div>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span>
+                <span id="theme-text">Tối</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Auth Modal -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-modal">
+            <button class="auth-close" onclick="closeAuthModal()">×</button>
+            
+            <div class="auth-header">
+                <h2>Chào mừng! </h2>
+                <p style="color: var(--text-secondary);">Đăng nhập để lưu địa điểm yêu thích</p>
+            </div>
+
+            <div id="authAlert"></div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">Đăng nhập</button>
+                <button class="auth-tab" onclick="switchTab('register')">Đăng ký</button>
+            </div>
+
+            <!-- Login Form -->
+            <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label> Email</label>
+                    <input type="email" name="email" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label> Mật khẩu</label>
+                    <input type="password" name="password" placeholder="Nhập mật khẩu" required>
+                </div>
+                <button type="submit" class="auth-btn" id="loginBtn">Đăng nhập</button>
+
+                <div class="auth-link">
+                    <a onclick="showResetPassword()">Quên mật khẩu?</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label> Tên hiển thị</label>
+                    <input type="text" name="display_name" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label> Email</label>
+                    <input type="email" name="email" placeholder="name@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label> Mật khẩu</label>
+                    <input type="password" name="password" placeholder="Tối thiểu 6 ký tự" minlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label> Xác nhận mật khẩu</label>
+                    <input type="password" name="confirm_password" placeholder="Nhập lại mật khẩu" required>
+                </div>
+                <button type="submit" class="auth-btn" id="registerBtn">Đăng ký</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <form method="post">
+            <input type="text" name="location" placeholder="Nhập địa điểm, ví dụ: Đà Nẵng, Hội An..." value="{{ query }}" required>
+            <button type="submit">🔍 Tìm kiếm</button>
+        </form>
+    </div>
+
+    <!-- AI Chatbot Box -->
+    <div class="chatbot-box">
+        <h3>🤖 Chatbot AI - Trợ lý du lịch thông minh</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">
+            💬 Hỏi tôi bất cứ điều gì về du lịch Việt Nam! Tôi có thể giúp bạn tìm địa điểm, gợi ý lịch trình, giới thiệu món ăn, và nhiều hơn nữa.
+        </p>
+
+        <div class="chatbot-form">
+            <!-- Messages Display -->
+            <div class="chatbot-messages" id="chatbotMessages" style="
+                background: var(--card-bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 15px;
+                min-height: 350px;
+                max-height: 500px;
+                overflow-y: auto;
+                margin-bottom: 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            ">
+                <div class="chat-welcome" style="
+                    color: var(--text-secondary); 
+                    text-align: center; 
+                    padding: 40px 20px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 15px;
+                ">
+                    <div style="font-size: 48px;">🤖</div>
+                    <div style="font-size: 16px; font-weight: 500;">Xin chào! Tôi là trợ lý AI du lịch</div>
+                    <div style="font-size: 14px; opacity: 0.8;">Hỏi tôi về:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 400px;">
+                        <span class="suggestion-chip" onclick="sendSuggestion('Gợi ý địa điểm du lịch ở Đà Nẵng')">
+                            🏖️ Địa điểm du lịch
+                        </span>
+                        <span class="suggestion-chip" onclick="sendSuggestion('Món ăn nổi tiếng ở Hà Nội')">
+                            🍜 Món ăn đặc sản
+                        </span>
+                        <span class="suggestion-chip" onclick="sendSuggestion('Thời tiết ở Sapa tháng 12')">
+                            ☀️ Thời tiết
+                        </span>
+                        <span class="suggestion-chip" onclick="sendSuggestion('Lên lịch trình 3 ngày ở Hội An')">
+                            📅 Lịch trình du lịch
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Input -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input 
+                    type="text" 
+                    id="chatbotQuestion" 
+                    placeholder="Nhập câu hỏi của bạn... (VD: Gợi ý địa điểm du lịch ở Phú Quốc)" 
+                    style="
+                        flex: 1; 
+                        padding: 14px; 
+                        border: 2px solid var(--border); 
+                        border-radius: 8px; 
+                        color: var(--text); 
+                        background: var(--card-bg); 
+                        font-family: inherit;
+                        font-size: 14px;
+                        transition: border-color 0.2s;
+                    "
+                    onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); askChatbotAI(); }"
+                    onfocus="this.style.borderColor='var(--primary)'"
+                    onblur="this.style.borderColor='var(--border)'"
+                >
+                <button onclick="askChatbotAI()" style="
+                    padding: 14px 24px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 14px;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                " 
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'" 
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
+                    <span>📤</span>
+                    <span>Gửi</span>
+                </button>
+                <button onclick="clearChatbotAI()" style="
+                    padding: 14px 20px;
+                    background: var(--border);
+                    color: var(--text);
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    font-size: 14px;
+                    transition: all 0.2s;
+                " 
+                onmouseover="this.style.background='var(--text-secondary)'; this.style.color='white'" 
+                onmouseout="this.style.background='var(--border)'; this.style.color='var(--text)'">
+                    🗑️
+                </button>
+            </div>
+
+            <!-- Status bar -->
+            <div id="chatbotStatus" style="
+                font-size: 12px;
+                color: var(--text-secondary);
+                padding: 8px;
+                text-align: center;
+                border-radius: 5px;
+                display: none;
+            "></div>
+        </div>
+    </div>
+
+    <!-- Translation Box -->
+    <div class="translate-box">
+        <h3>🌍 Dịch văn bản</h3>
+        <div class="translate-form">
+            <div class="translate-input-group">
+                <label for="translateInput">Nhập văn bản cần dịch:</label>
+                <textarea id="translateInput" placeholder="Nhập văn bản bằng ngôn ngữ khác..." rows="4"></textarea>
+            </div>
+            
+            <div class="translate-controls">
+                <div class="lang-selector">
+                    <div>
+                        <label for="sourceLang">Từ:</label>
+                        <select id="sourceLang">
+                            <option value="auto">🌍 Tự phát hiện</option>
+                            <option value="vi">🇻🇳 Tiếng Việt</option>
+                            <option value="en">🇬🇧 Tiếng Anh</option>
+                            <option value="zh-CN">🇨🇳 Tiếng Trung</option>
+                            <option value="ja">🇯🇵 Tiếng Nhật</option>
+                            <option value="ko">🇰🇷 Tiếng Hàn</option>
+                        </select>
+                    </div>
+        
+                    <span class="arrow">→</span>
+        
+                    <div>
+                        <label for="targetLang">Sang:</label>
+                        <select id="targetLang">
+                            <option value="vi">🇻🇳 Tiếng Việt</option>
+                            <option value="en">🇬🇧 Tiếng Anh</option>
+                            <option value="zh-CN">🇨🇳 Tiếng Trung</option>
+                            <option value="ja">🇯🇵 Tiếng Nhật</option>
+                            <option value="ko">🇰🇷 Tiếng Hàn</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="translateBtn" onclick="translateText()">Dịch</button>
+            </div>
+            <div class="translate-output" id="translateOutput" style="display: none;">
+                <label>Kết quả dịch:</label>
+                <div class="translated-result" id="translatedResult"></div>
+            </div>
+        </div>
+    </div>
+
+    {% if weather %}
+    <div class="weather-box">
+        <img class="weather-icon" src="https://openweathermap.org/img/wn/{{ weather.icon }}@2x.png" alt="">
+        <div class="weather-info">
+            <h3>☀️ Thời tiết {{ display_name.split(',')[0] }}</h3>
+            <div class="weather-details">
+                <div class="weather-item"><span class="temp-main">{{ weather.temp }}°C</span></div>
+                <div class="weather-item">💧 Độ ẩm: {{ weather.humidity }}%</div>
+                <div class="weather-item">💨 Gió: {{ weather.wind_speed }} m/s</div>
+                <div class="weather-item">🌤 {{ weather.description | capitalize }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="route-info" id="routeInfo">
+        <div class="route-stat">
+            <span>🚗</span>
+            <div><div class="route-stat-value" id="routeDistance">--</div><div class="route-stat-label">Khoảng cách</div></div>
+        </div>
+        <div class="route-stat">
+            <span>⏱️</span>
+            <div><div class="route-stat-value" id="routeDuration">--</div><div class="route-stat-label">Thời gian</div></div>
+        </div>
+        <button class="btn-clear" onclick="clearRoute()">✕ Xóa tuyến đường</button>
+    </div>
+
+    {% if lat and lon %}
+    <div id="map"></div>
+    {% endif %}
+
+    {% if pois %}
+    <div class="poi-list">
+        <h2>📍 Điểm du lịch gần đây ({{ pois|length }})</h2>
+        <div class="poi-grid">
+            {% for poi in pois %}
+            <div class="poi-card" onclick="showRoute({{ lat }}, {{ lon }}, {{ poi.lat }}, {{ poi.lon }}, '{{ poi.name }}')">
+                <h4>{{ poi.name }}</h4>
+                <span class="poi-type">🏷️ {{ poi.type or 'Du lịch' }}</span>
+                {% if poi.weather %}
+                <div class="poi-weather">
+                    <img src="https://openweathermap.org/img/wn/{{ poi.weather.icon }}.png" alt="">
+                    <span><b>{{ poi.weather.temp }}°C</b></span>
+                    <span>💧 {{ poi.weather.humidity }}%</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.suggestion-chip {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.suggestion-chip:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.chat-message {
+    padding: 12px 16px;
+    border-radius: 12px;
+    max-width: 80%;
+    word-wrap: break-word;
+    line-height: 1.6;
+    animation: slideIn 0.3s ease;
+}
+
+.chat-message.user {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.chat-message.assistant {
+    background: var(--card-bg);
+    color: var(--text);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.chat-message.error {
+    background: #fee;
+    color: #c33;
+    border-left: 4px solid #c33;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+}
+
+.chatbot-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chatbot-messages::-webkit-scrollbar-track {
+    background: var(--bg);
+    border-radius: 4px;
+}
+
+.chatbot-messages::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.chatbot-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+</style>
+
+<script>
+// ============ AUTH STATE MANAGEMENT ============
+let currentUser = null;
+
+function checkAuthState() {
+    const userData = localStorage.getItem('vietnamPlaceUser');
+    if (userData) {
+        try {
+            currentUser = JSON.parse(userData);
+            updateUIForUser(currentUser);
+        } catch (e) {
+            localStorage.removeItem('vietnamPlaceUser');
+            updateUIForGuest();
+        }
+    } else {
+        updateUIForGuest();
+    }
+}
+
+function saveUserToStorage(user) {
+    localStorage.setItem('vietnamPlaceUser', JSON.stringify(user));
+    currentUser = user;
+}
+
+function removeUserFromStorage() {
+    localStorage.removeItem('vietnamPlaceUser');
+    currentUser = null;
+}
+
+function updateUIForUser(user) {
+    document.querySelector('.auth-login-btn').classList.remove('show');
+    document.getElementById('userMenu').classList.add('active');
+    document.getElementById('userEmail').textContent = user.email;
+    document.getElementById('userInitial').textContent = user.email[0].toUpperCase();
+}
+
+function updateUIForGuest() {
+    document.querySelector('.auth-login-btn').classList.add('show');
+    document.getElementById('userMenu').classList.remove('active');
+}
+
+checkAuthState();
+
+function showAuthModal() {
+    document.getElementById('authOverlay').classList.add('active');
+}
+
+function closeAuthModal() {
+    document.getElementById('authOverlay').classList.remove('active');
+    clearAuthAlert();
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    
+    if (tab === 'login') {
+        document.querySelectorAll('.auth-tab')[0].classList.add('active');
+        document.getElementById('loginForm').classList.add('active');
+    } else {
+        document.querySelectorAll('.auth-tab')[1].classList.add('active');
+        document.getElementById('registerForm').classList.add('active');
+    }
+    clearAuthAlert();
+}
+
+function showAuthAlert(message, type = 'success') {
+    const alertDiv = document.getElementById('authAlert');
+    alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+}
+
+function clearAuthAlert() {
+    document.getElementById('authAlert').innerHTML = '';
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const btn = document.getElementById('registerBtn');
+    const form = e.target;
+    
+    const displayName = form.display_name.value;
+    const email = form.email.value;
+    const password = form.password.value;
+    const confirmPassword = form.confirm_password.value;
+    
+    if (password !== confirmPassword) {
+        showAuthAlert('Mật khẩu xác nhận không khớp!', 'error');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Đang đăng ký...';
+    
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: email,
+                password: password,
+                display_name: displayName
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAuthAlert('✅ ' + data.message, 'success');
+            setTimeout(() => {
+                switchTab('login');
+                form.reset();
+            }, 3000);
+        } else {
+            showAuthAlert('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        showAuthAlert('❌ Lỗi kết nối!', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Đăng ký';
+    }
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const form = e.target;
+    
+    const email = form.email.value;
+    const password = form.password.value;
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Đang đăng nhập...';
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: email,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            saveUserToStorage(data.user);
+            updateUIForUser(data.user);
+            showAuthAlert('✅ Đăng nhập thành công!', 'success');
+            
+            setTimeout(() => {
+                closeAuthModal();
+                form.reset();
+            }, 1500);
+        } else {
+            showAuthAlert('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        showAuthAlert('❌ Lỗi kết nối!', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Đăng nhập';
+    }
+}
+
+async function logout() {
+    try {
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        removeUserFromStorage();
+        updateUIForGuest();
+        toggleUserDropdown();
+        alert('Đã đăng xuất thành công!');
+    } catch (error) {
+        alert('Lỗi khi đăng xuất!');
+    }
+}
+
+function toggleUserDropdown() {
+    document.getElementById('userDropdown').classList.toggle('active');
+}
+
+async function showResetPassword() {
+    const email = prompt('Nhập email của bạn để đặt lại mật khẩu:');
+    if (email) {
+        try {
+            const response = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('✅ ' + data.message);
+            } else {
+                alert('❌ ' + data.error);
+            }
+        } catch (error) {
+            alert('❌ Lỗi kết nối!');
+        }
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.user-menu')) {
+        document.getElementById('userDropdown').classList.remove('active');
+    }
+});
+
+// ============ THEME ============
+const html = document.documentElement;
+const savedTheme = localStorage.getItem('theme') || 'light';
+html.setAttribute('data-theme', savedTheme);
+updateThemeUI();
+
+function toggleTheme() {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateThemeUI();
+    if (typeof updateMapTiles === 'function') {
+        updateMapTiles();
+    }
+}
+
+function updateThemeUI() {
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+    document.getElementById('theme-text').textContent = isDark ? 'Sáng' : 'Tối';
+}
+
+// ============ TRANSLATION ============
+async function translateText() {
+    const inputText = document.getElementById('translateInput').value.trim();
+    const targetLang = document.getElementById('targetLang').value;
+    const btn = document.getElementById('translateBtn');
+    const output = document.getElementById('translateOutput');
+    const result = document.getElementById('translatedResult');
+    
+    if (!inputText) {
+        alert('Vui lòng nhập văn bản cần dịch!');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Đang dịch...';
+    output.style.display = 'block';
+    result.textContent = 'Đang xử lý...';
+    
+    try {
+        const res = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                text: inputText, 
+                target: targetLang  
+            })
+        });
+        
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        
+        result.textContent = data.translated;
+        btn.textContent = '✔ Đã dịch';
+        
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = 'Dịch';
+        }, 2000);
+    } catch (e) {
+        result.textContent = '❌ Lỗi: Không thể dịch. Vui lòng thử lại.';
+        btn.disabled = false;
+        btn.textContent = 'Dịch';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('translateInput');
+    if (textarea) {
+        textarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                translateText();
+            }
+        });
+    }
+});
+
+// ============ CHATBOT AI FUNCTIONS ============
+
+function sendSuggestion(text) {
+    document.getElementById('chatbotQuestion').value = text;
+    askChatbotAI();
+}
+
+// ============ CHATBOT AI FUNCTIONS - CONTINUATION ============
+
+async function askChatbotAI() {
+    const question = document.getElementById('chatbotQuestion').value.trim();
+
+    if (!question) {
+        showChatbotStatus('⚠️ Vui lòng nhập câu hỏi!', 'warning');
+        return;
+    }
+
+    const welcome = document.querySelector('.chat-welcome');
+    if (welcome) {
+        welcome.remove();
+    }
+
+    addChatMessageNew(question, 'user');
+    showChatLoadingNew();
+    document.getElementById('chatbotQuestion').value = '';
+
+    try {
+        const response = await hfClient.chat(question);
+
+        removeChatLoadingNew();
+
+        if (response.success) {
+            addChatMessageNew(response.response, 'assistant');
+        } else {
+            if (response.error === 'MODEL_LOADING') {
+                addChatMessageNew('⏳ ' + response.response + '\n\nMẹo: Model AI đang khởi động lần đầu. Hãy thử lại sau 20-30 giây.', 'assistant');
+            } else {
+                addChatMessageNew('❌ ' + response.response, 'error');
+            }
+        }
+    } catch (error) {
+        removeChatLoadingNew();
+        addChatMessageNew(`❌ Lỗi: ${error.message}`, 'error');
+    }
+
+    document.getElementById('chatbotQuestion').focus();
+}
+
+function addChatMessageNew(text, type = 'user') {
+    const messagesDiv = document.getElementById('chatbotMessages');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${type}`;
+    
+    const formattedText = text.replace(/\n/g, '<br>');
+    messageDiv.innerHTML = formattedText;
+
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function showChatLoadingNew() {
+    const messagesDiv = document.getElementById('chatbotMessages');
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'chatLoadingNew';
+    loadingDiv.className = 'chat-message assistant';
+    loadingDiv.style.padding = '16px';
+
+    loadingDiv.innerHTML = `
+        <div style="display: flex; gap: 6px; align-items: center;">
+            <span style="width: 10px; height: 10px; background: var(--primary); border-radius: 50%; animation: bounce 1.4s infinite;"></span>
+            <span style="width: 10px; height: 10px; background: var(--primary); border-radius: 50%; animation: bounce 1.4s infinite; animation-delay: 0.2s;"></span>
+            <span style="width: 10px; height: 10px; background: var(--primary); border-radius: 50%; animation: bounce 1.4s infinite; animation-delay: 0.4s;"></span>
+            <span style="margin-left: 8px; font-size: 13px; color: var(--text-secondary);">AI đang suy nghĩ...</span>
+        </div>
+    `;
+
+    messagesDiv.appendChild(loadingDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function removeChatLoadingNew() {
+    const loadingDiv = document.getElementById('chatLoadingNew');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+
+function clearChatbotAI() {
+    if (typeof hfClient !== 'undefined') {
+        hfClient.clearHistory();
+    }
+    
+    document.getElementById('chatbotQuestion').value = '';
+    document.getElementById('chatbotMessages').innerHTML = `
+        <div class="chat-welcome" style="
+            color: var(--text-secondary); 
+            text-align: center; 
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        ">
+            <div style="font-size: 48px;">🤖</div>
+            <div style="font-size: 16px; font-weight: 500;">Xin chào! Tôi là trợ lý AI du lịch</div>
+            <div style="font-size: 14px; opacity: 0.8;">Hỏi tôi về:</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 400px;">
+                <span class="suggestion-chip" onclick="sendSuggestion('Gợi ý địa điểm du lịch ở Đà Nẵng')">
+                    🏖️ Địa điểm du lịch
+                </span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Món ăn nổi tiếng ở Hà Nội')">
+                    🍜 Món ăn đặc sản
+                </span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Thời tiết ở Sapa tháng 12')">
+                    ☀️ Thời tiết
+                </span>
+                <span class="suggestion-chip" onclick="sendSuggestion('Lên lịch trình 3 ngày ở Hội An')">
+                    📅 Lịch trình du lịch
+                </span>
+            </div>
+        </div>
+    `;
+    
+    showChatbotStatus('✅ Đã xóa lịch sử hội thoại', 'success');
+    setTimeout(() => hideChatbotStatus(), 2000);
+}
+
+function showChatbotStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('chatbotStatus');
+    statusDiv.textContent = message;
+    statusDiv.style.display = 'block';
+    
+    if (type === 'success') {
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.color = '#155724';
+    } else if (type === 'warning') {
+        statusDiv.style.background = '#fff3cd';
+        statusDiv.style.color = '#856404';
+    } else if (type === 'error') {
+        statusDiv.style.background = '#f8d7da';
+        statusDiv.style.color = '#721c24';
+    } else {
+        statusDiv.style.background = 'var(--card-bg)';
+        statusDiv.style.color = 'var(--text-secondary)';
+    }
+}
+
+function hideChatbotStatus() {
+    document.getElementById('chatbotStatus').style.display = 'none';
+}
+
+function sendSuggestion(text) {
+    document.getElementById('chatbotQuestion').value = text;
+    askChatbotAI();
+}
+
+// Check API status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (typeof hfClient !== 'undefined') {
+            if (hfClient.isOnline) {
+                showChatbotStatus('✅ Chatbot AI đã sẵn sàng', 'success');
+            } else {
+                showChatbotStatus('⚠️ Cần khởi động backend: python huggingface_api.py', 'warning');
+            }
+            setTimeout(() => hideChatbotStatus(), 4000);
+        }
+    }, 1000);
+});
+</script>
+
+<!-- MAP JAVASCRIPT -->
+{% if lat and lon %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const lightTile = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const darkTile = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+const map = L.map('map').setView([{{ lat }}, {{ lon }}], 14);
+let tileLayer = L.tileLayer(savedTheme === 'dark' ? darkTile : lightTile, {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+function updateMapTiles() {
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    map.removeLayer(tileLayer);
+    tileLayer = L.tileLayer(isDark ? darkTile : lightTile, { 
+        attribution: '© OpenStreetMap' 
+    }).addTo(map);
+}
+
+const redIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41], 
+    iconAnchor: [12, 41], 
+    popupAnchor: [1, -34], 
+    shadowSize: [41, 41]
+});
+
+const blueIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41], 
+    iconAnchor: [12, 41], 
+    popupAnchor: [1, -34], 
+    shadowSize: [41, 41]
+});
+
+const centerLat = {{ lat }}, centerLon = {{ lon }};
+{% if weather %}
+const centerPopup = `<div class="popup-content">
+    <h4>📍 {{ display_name.split(',')[0] }}</h4>
+    <hr>
+    <div class="popup-weather">
+        <img src="https://openweathermap.org/img/wn/{{ weather.icon }}.png">
+        <div><b>{{ weather.temp }}°C</b><br><small>{{ weather.description }}</small></div>
+    </div>
+    <div style="margin-top:8px;font-size:12px">💧 {{ weather.humidity }}% | 💨 {{ weather.wind_speed }} m/s</div>
+</div>`;
+{% else %}
+const centerPopup = `<div class="popup-content"><h4>📍 {{ display_name }}</h4></div>`;
+{% endif %}
+L.marker([centerLat, centerLon], {icon: redIcon}).addTo(map).bindPopup(centerPopup).openPopup();
+
+const pois = {{ pois|tojson }};
+pois.forEach(poi => {
+    let popup = `<div class="popup-content">
+        <h4>${poi.name}</h4>
+        <small>🏷️ ${poi.type || 'Du lịch'}</small>`;
+    
+    if (poi.weather) {
+        popup += `<hr><div class="popup-weather">
+            <img src="https://openweathermap.org/img/wn/${poi.weather.icon}.png">
+            <div><b>${poi.weather.temp}°C</b><br><small>${poi.weather.description}</small></div>
+        </div>
+        <div style="margin-top:8px;font-size:12px">💧 ${poi.weather.humidity}% | 💨 ${poi.weather.wind_speed} m/s</div>`;
+    }
+    
+    popup += `<button class="popup-btn" onclick="showRoute(${centerLat},${centerLon},${poi.lat},${poi.lon},'${poi.name.replace(/'/g, "\\'")}')">
+        🚗 Chỉ đường
+    </button></div>`;
+    
+    L.marker([poi.lat, poi.lon], {icon: blueIcon}).addTo(map).bindPopup(popup);
+});
+
+let routeLine = null;
+
+async function showRoute(lat1, lon1, lat2, lon2, destName) {
+    clearRoute();
+    try {
+        const res = await fetch(`/api/route?lat1=${lat1}&lon1=${lon1}&lat2=${lat2}&lon2=${lon2}`);
+        const data = await res.json();
+        
+        if (data.error) { 
+            alert('Không tìm thấy tuyến đường'); 
+            return; 
+        }
+        
+        routeLine = L.polyline(data.coordinates, {
+            color: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#667eea',
+            weight: 5, 
+            opacity: 0.8
+        }).addTo(map);
+        
+        map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+        
+        document.getElementById('routeDistance').textContent = data.distance_km + ' km';
+        document.getElementById('routeDuration').textContent = Math.round(data.duration_min) + ' phút';
+        document.getElementById('routeInfo').classList.add('active');
+        displayRouteSteps(data.steps);
+    } catch (e) { 
+        alert('Lỗi khi tìm tuyến đường'); 
+    }
+}
+
+function displayRouteSteps(steps) {
+    let stepsHTML = '<div class="route-steps"><h4>📍 Chỉ đường chi tiết:</h4><ol>';
+    
+    steps.forEach((step, index) => {
+        const distanceText = step.distance >= 1000 
+            ? `${(step.distance / 1000).toFixed(1)} km` 
+            : `${step.distance} m`;
+        
+        stepsHTML += `
+            <li>
+                <div class="step-instruction">${step.instruction}</div>
+                <div class="step-details">
+                    <span class="step-name">${step.name}</span>
+                    <span class="step-distance">${distanceText}</span>
+                </div>
+            </li>
+        `;
+    });
+    
+    stepsHTML += '</ol></div>';
+
+    const existingSteps = document.querySelector('.route-steps');
+    if (existingSteps) {
+        existingSteps.remove();
+    }
+    
+    document.getElementById('routeInfo').insertAdjacentHTML('beforeend', stepsHTML);
+}
+
+function clearRoute() {
+    if (routeLine) { 
+        map.removeLayer(routeLine); 
+        routeLine = null; 
+    }
+    document.getElementById('routeInfo').classList.remove('active');
+    
+    const existingSteps = document.querySelector('.route-steps');
+    if (existingSteps) {
+        existingSteps.remove();
+    }
+}
+</script>
+{% endif %}
+</body>
+</html>
