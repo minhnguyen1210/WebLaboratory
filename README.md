@@ -1,26 +1,23 @@
-# 🇻🇳 Vietnam Place 
+$ Vietnam Place 
+## Tính năng chính
 
-Một ứng dụng web hiện đại để khám phá các địa điểm du lịch Việt Nam với tính năng AI mạnh mẽ từ HuggingFace.
-
-## 🎯 Tính năng chính
-
-### 1. 📍 Tìm kiếm địa điểm
+### 1. Tìm kiếm địa điểm
 - Tìm kiếm địa điểm Việt Nam theo tên
 - Hiển thị thông tin thời tiết thời real-time
 - Danh sách các điểm du lịch gần đó
 
-### 2. 🗺️ Chỉ dẫn đường
+### 2. Chỉ dẫn đường
 - Tính toán tuyến đường giữa hai địa điểm
 - Hướng dẫn chi tiết từng bước
 - Hiển thị khoảng cách và thời gian
 
-### 3. 🌐 Dịch văn bản
+### 3.  Dịch văn bản
 - Dịch giữa nhiều ngôn ngữ
-- Hai phiên bản: Local (Google Translate) + HuggingFace
 
-### 4. 🤖 HuggingFace AI Features
+### 4.  HuggingFace AI Features
 - Chatbot
-### 5. ☀️ Thông tin thời tiết
+- 
+### 5. Thông tin thời tiết
 - Hiển thị nhiệt độ, độ ẩm, tốc độ gió
 - Icon thời tiết tương ứng
 - Cập nhật real-time từ OpenWeatherMap
@@ -30,7 +27,7 @@ Một ứng dụng web hiện đại để khám phá các địa điểm du l�
 - Lưu dữ liệu địa điểm yêu thích
 - Quản lý hồ sơ người dùng
 
-## 🏗️ Kiến trúc hệ thống
+##  Kiến trúc hệ thống
 
 ```
 Frontend (index.html)
@@ -51,7 +48,7 @@ HuggingFace API
     └─ Inference endpoints
 ```
 
-## 📦 Dependencies
+##  Dependencies
 
 ```
 Flask==3.0.0
@@ -62,7 +59,7 @@ deep-translator==1.11.4
 pydantic==2.5.0
 ```
 
-## 🚀 Cài đặt & Chạy
+##  Cài đặt & Chạy
 
 ### 1. Cài đặt Python dependencies
 
@@ -107,7 +104,7 @@ python main.py
 - FastAPI Docs: http://localhost:8000/docs
 
 
-## 📝 Sử dụng HuggingFace API
+##  Sử dụng HuggingFace API
 
 ### Từ Frontend (JavaScript)
 
@@ -159,15 +156,7 @@ response = requests.post(
 3. Create new token (read access)
 4. Copy token vào `.env`
 
-
-## 🎨 Tính năng giao diện
-
-- **Responsive Design**: Hoạt động tốt trên desktop, tablet, mobile
-- **Dark/Light Theme**: Chế độ tối/sáng
-- **Real-time Updates**: Dữ liệu cập nhật tức thì
-- **Smooth Animations**: Hiệu ứng mượt mà
-
-## 📊 Project Structure
+##  Project Structure
 
 ```
 .
