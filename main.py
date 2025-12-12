@@ -14,13 +14,6 @@ from routing import get_route
 current_dir = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, template_folder=current_dir)
 
-@app.after_request
-def add_tunnel_headers(response):
-    """Thêm headers để bypass ngrok và pinggy warning page"""
-    response.headers['ngrok-skip-browser-warning'] = 'true'
-    response.headers['X-Pinggy-No-Screen'] = 'true'
-    return response
-
 UA = {"User-Agent": "VietnamPlace/1.0 (contact: bsssdd24@gmail.com)"}
 
 # ============ AUTHENTICATION ROUTES ============
