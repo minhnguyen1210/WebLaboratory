@@ -173,7 +173,7 @@ Sau khi thêm xong, bạn sẽ có **6 biến**:
 
 ## PHẦN 7: LƯU Ý QUAN TRỌNG
 
-### ⚠️ Free Tier Limitations:
+###  Free Tier Limitations:
 
 1. **Service ngủ sau 15 phút idle**
    - Lần truy cập đầu sau khi ngủ mất 30-60 giây để wake up
